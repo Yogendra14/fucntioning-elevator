@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+	<appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="SERVER">
+		<encoder>
+			<outputPatternAsHeader>true</outputPatternAsHeader>
+			<pattern>%d{ISO8601} [ %-5p ] [ %c{3} ] %msg%n</pattern>
+		</encoder>
+		<file>/var/log/functioning-elevator/elevator.log</file>
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>DEBUG</level>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>
+				/var/log/functioning-elevator/elevator.log.%d{yyyyMMddHH}.gz
+			</fileNamePattern>
+			<maxHistory>8400</maxHistory>
+		</rollingPolicy>
+	</appender>
+
+	<appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC">
+		<appender-ref ref="SERVER"/>
+		<discardingThreshold>0</discardingThreshold>
+		<queueSize>10000</queueSize>
+	</appender>
+
+	<contextName>Functioning-Elevator</contextName>
+
+	<logger additivity="false" name="com.ysingh">
+		<appender-ref ref="ASYNC"/>
+		<level value="DEBUG"/>
+	</logger>
+
+	<root level="ERROR">
+		<appender-ref ref="ASYNC"/>
+	</root>
+</configuration>
