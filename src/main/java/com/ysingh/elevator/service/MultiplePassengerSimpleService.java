@@ -72,28 +72,24 @@ public class MultiplePassengerSimpleService implements ElevatorService {
         log.debug("Move to Floor {}", elevator.getCurrentFloor());
         floorsVisited.add(elevator.getCurrentFloor());
       }
-      if(!pr.isBoarded()) {
+      if(!pr.isBoarded() && elevator.getCurrentFloor() == pr.getPickupFloor()) {
         log.debug("Pick up Passenger {}", pr.getRequestNo());
-        /*steps.add("Move to Floor " + elevator.getCurrentFloor() + " (Pickup Passenger " + pr.getRequestNo()
+        steps.add("Move to Floor " + elevator.getCurrentFloor() + " (Pickup Passenger " + pr.getRequestNo()
               + ") ("
               + getFloorsVisited().size() + ")");
-        pr.setBoarded(true);*/
-        enRoutePickups(pr);
-        enRouteDropOffs(pr);
+        pr.setBoarded(true);
         setElevatorDirectionForDropOff(pr);
+        enRoutePickups();
+        enRouteDropOffs();
       }
       while(pr.isBoarded() && elevator.getCurrentFloor() != pr.getDropOffFloor()) {
         setElevatorDirectionForDropOff(pr);
         elevator.move();
         log.debug("Move to Floor {}", elevator.getCurrentFloor());
         floorsVisited.add(elevator.getCurrentFloor());
-        enRoutePickups(pr);
-        enRouteDropOffs(pr);
+        enRoutePickups();
+        enRouteDropOffs();
       }
-      /*log.debug("Dropped Off Passenger {}", pr.getRequestNo());
-      steps.add("Move to Floor " + elevator.getCurrentFloor() + " (Drop off Passenger " + pr.getRequestNo()
-          + ") ("
-          + getFloorsVisited().size() + ")");*/
       passengerRequests.remove(pr);
     }
     log.debug("Total {} Floor visited: {}", floorsVisited.size(), floorsVisited);
@@ -124,10 +120,9 @@ public class MultiplePassengerSimpleService implements ElevatorService {
     handleElevatorDirectionOnEdges();
   }
 
-  protected void enRoutePickups(final PassengerRequest passengerRequest) {
+  protected void enRoutePickups() {
     final StringBuilder pickUps = new StringBuilder(0);
     passengerRequests.stream()
-        //.filter(pr -> pr != passengerRequest)
         .filter(pr -> !pr.isBoarded() && (pr.getPickupFloor() == elevator.getCurrentFloor()) && movingToSameDirection(pr))
         .forEachOrdered(
             pr -> {
@@ -149,10 +144,9 @@ public class MultiplePassengerSimpleService implements ElevatorService {
     }
   }
 
-  protected void enRouteDropOffs(final PassengerRequest passengerRequest) {
+  protected void enRouteDropOffs() {
     String droppedOffPassengers =
         passengerRequests.stream()
-        //.filter(pr -> pr != passengerRequest)
         .filter(pr -> (pr.isBoarded() && (pr.getDropOffFloor() == elevator.getCurrentFloor())))
         .map(pr -> String.valueOf(pr.getRequestNo())
         ).collect(Collectors.joining(","));

@@ -64,28 +64,28 @@ public class MultiplePassengerOptimalService implements ElevatorService {
         elevator.move();
         log.debug("Move to Floor {}", elevator.getCurrentFloor());
         floorsVisited.add(elevator.getCurrentFloor());
-        /*anyPickUps(pr);
-        anyDropOffs(pr);*/
-      }
-      if(!pr.isBoarded()) {
-        log.debug("Pick up Passenger {}", pr.getRequestNo());
-        //pr.setBoarded(true);
-        enRoutePickUps(pr);
-        enRouteDropOffs(pr);
+        enRoutePickUps();
+        enRouteDropOffs();
         setElevatorDirectionForDropOff(pr);
+      }
+      if(!pr.isBoarded() && elevator.getCurrentFloor() == pr.getPickupFloor()) {
+        log.debug("Pick up Passenger {}", pr.getRequestNo());
+        steps.add("Move to Floor " + elevator.getCurrentFloor() + " (Pick up Passenger " + pr.getRequestNo()
+            + ") ("
+            + getFloorsVisited().size() + ")");
+        pr.setBoarded(true);
+        setElevatorDirectionForDropOff(pr);
+        enRoutePickUps();
+        enRouteDropOffs();
       }
       while(pr.isBoarded() && elevator.getCurrentFloor() != pr.getDropOffFloor()) {
         setElevatorDirectionForDropOff(pr);
         elevator.move();
         log.debug("Move to Floor {}", elevator.getCurrentFloor());
         floorsVisited.add(elevator.getCurrentFloor());
-        enRoutePickUps(pr);
-        enRouteDropOffs(pr);
+        enRoutePickUps();
+        enRouteDropOffs();
       }
-      log.debug("Dropped Off Passenger {}", pr.getRequestNo());
-      /*steps.add("Move to Floor " + elevator.getCurrentFloor() + " (Drop off Passenger " + pr.getRequestNo()
-        + ") ("
-        + getFloorsVisited().size() + ")");*/
       passengerRequests.remove(pr);
     }
     log.debug("Total {} Floor visited: {}", floorsVisited.size(), floorsVisited);
@@ -116,80 +116,9 @@ public class MultiplePassengerOptimalService implements ElevatorService {
     handleElevatorDirectionOnEdges();
   }
 
-  private void requestElevatorOrFloor(PassengerRequest pr) {
-    if(!pr.isBoarded() && isPassengerOnFloor(pr)) {
-      pr.setBoarded(true);
-    }
-  }
-
-  /*private void anyPickUps(PassengerRequest passengerRequest) {
-    //StringBuilder pickUps = new StringBuilder(0);
-    String pickUps = passengerRequests.stream()
-        //.filter(pr -> pr != passengerRequest)
-        .filter(pr -> !pr.isBoarded() && (pr.getPickupFloor() == elevator.getCurrentFloor()) && movingToSameDirection(pr))
-        .map(
-            pr -> {
-              *//*if(pickUps.length() > 0) {
-                pickUps.append(" , ").append(pr.getRequestNo());
-              }
-              pickUps.append(pr.getRequestNo());
-              log.debug("anyPickUps: Pick up Passenger {}", pr.getRequestNo());*//*
-              pr.setBoarded(true);
-              return String.valueOf(pr.getRequestNo());
-            }
-        ).collect(Collectors.joining(","));
-    if(pickUps.length() > 0) {
-      log.debug("anyPickUps: Pick up Passenger {}", pickUps);
-      steps.add("Move to Floor " + elevator.getCurrentFloor()
-          + " (Pick up Passenger " + pickUps
-          + ") ("
-          + getFloorsVisited().size()
-          + ")"
-      );
-    }
-  }
-
-  private void anyDropOffs(PassengerRequest passengerRequest) {
-    //StringBuilder droppedOffPassengers = new StringBuilder(0);
-    String droppedOffPassengers =
-        passengerRequests.stream()
-        .filter(pr -> pr != passengerRequest)
-        .filter(pr -> pr.isBoarded() && (pr.getDropOffFloor() == elevator.getCurrentFloor()))
-        .map(
-            pr -> {
-              *//*if(droppedOffPassengers.length() > 0) {
-                droppedOffPassengers.append(" , ").append(pr.getRequestNo());
-              }
-              droppedOffPassengers.append(pr.getRequestNo());
-              log.debug("anyDropOffs: Drop off Passenger {}", pr.getRequestNo());*//*
-              passengerRequests.remove(pr);
-              return String.valueOf(pr.getRequestNo());
-            }
-        ).collect(Collectors.joining(","));
-    *//*for (PassengerRequest pr : passengerRequests) {
-      if(pr.isBoarded() && pr.getDropOffFloor() == elevator.getCurrentFloor()) {
-        if(droppedOffPassengers.length() > 0) {
-          droppedOffPassengers.append(" , ").append(pr.getRequestNo());
-        }
-        droppedOffPassengers.append(pr.getRequestNo());
-        passengerRequests.remove(pr);
-      }
-    }*//*
-    if(droppedOffPassengers.length() > 0) {
-      log.debug("anyDropOffs: Drop off Passenger {}", droppedOffPassengers);
-      steps.add("Move to Floor " + elevator.getCurrentFloor()
-          + " (Drop off Passenger " + droppedOffPassengers
-          + ") ("
-          + getFloorsVisited().size()
-          + ")"
-      );
-    }
-  }*/
-
-  private void enRoutePickUps(final PassengerRequest passengerRequest) {
+  private void enRoutePickUps() {
     final StringBuilder pickUps = new StringBuilder(0);
     passengerRequests.stream()
-        //.filter(pr -> pr != passengerRequest)
         .filter(pr -> !pr.isBoarded() && (pr.getPickupFloor() == elevator.getCurrentFloor()) && movingToSameDirection(pr))
         .forEachOrdered(
             pr -> {
@@ -211,10 +140,9 @@ public class MultiplePassengerOptimalService implements ElevatorService {
     }
   }
 
-  private void enRouteDropOffs(final PassengerRequest passengerRequest) {
+  private void enRouteDropOffs() {
     String droppedOffPassengers =
         passengerRequests.stream()
-            //.filter(pr -> pr != passengerRequest)
             .filter(pr -> (pr.isBoarded() && (pr.getDropOffFloor() == elevator.getCurrentFloor())))
             .map(pr -> String.valueOf(pr.getRequestNo())
             ).collect(Collectors.joining(","));
@@ -233,10 +161,6 @@ public class MultiplePassengerOptimalService implements ElevatorService {
 
   private boolean movingToSameDirection(PassengerRequest pr) {
     return pr.getRequestedDirection() == elevator.getMovingDirection();
-  }
-
-  private boolean isPassengerOnFloor(PassengerRequest pReq) {
-    return pReq.getPickupFloor() == elevator.getCurrentFloor();
   }
 
   private void handleElevatorDirectionOnEdges() {
@@ -263,21 +187,6 @@ public class MultiplePassengerOptimalService implements ElevatorService {
       elevator.setMovingDirection(Direction.NONE);
       elevator.setState(State.HALTED);
     }
-  }
-
-  private void boardAndRequestFloor(PassengerRequest pReq) {
-    if(pReq.getPickupFloor() == pReq.getDropOffFloor()) {
-      log.warn("Passenger {} requested same floor for Pick up & Drop off, skipping Passenger.", pReq.getRequestNo());
-      steps.add("Passenger " + pReq.getRequestNo() + " requested same floor for Pick up & Drop off, skipping Passenger.");
-      setDirectionForRequestedFloor(pReq);
-      passengerRequests.remove(pReq);
-    } else {
-      log.debug("Pick up Passenger {}", pReq.getRequestNo());
-      steps.add("Pick up Passenger " + pReq.getRequestNo());
-      pReq.setBoarded(true);
-      setDirectionForRequestedFloor(pReq);
-    }
-    //setDirectionForRequestedFloor(pReq);
   }
 
   @Override
